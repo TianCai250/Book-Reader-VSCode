@@ -1,5 +1,5 @@
 import vscode from 'vscode';
-import type { ExtensionContext } from 'vscode';
+import { workspace, type ExtensionContext } from 'vscode';
 import Book from './Book';
 
 export function activate(context: ExtensionContext) {
@@ -16,16 +16,32 @@ export function activate(context: ExtensionContext) {
         vscode.window.setStatusBarMessage(lauage_arr_list[index]);
     });
 
+    const book = new Book();
+
     const nextPage = vscode.commands.registerCommand('extension.nextPage', () => {
-        vscode.window.setStatusBarMessage(new Book().getNextPage());
+        vscode.window.setStatusBarMessage(book.getNextPage());
     });
 
     const prePage = vscode.commands.registerCommand('extension.prePage', () => {
-        vscode.window.setStatusBarMessage(new Book().getPrePage());
+        vscode.window.setStatusBarMessage(book.getPrePage());
     });
     context.subscriptions.push(bossCode);
     context.subscriptions.push(nextPage);
     context.subscriptions.push(prePage);
+
+    // 配置路径改变，重新获取书籍信息
+    let timer: NodeJS.Timeout | null = null;
+    workspace.onDidChangeConfiguration(e => {
+        if (e.affectsConfiguration('bookReader.filePath')) {
+            if (timer) {
+                clearTimeout(timer);
+            }
+            timer = setTimeout(() => {
+                book.getContent();
+                timer = null;
+            }, 1000);
+        }
+    });
 }
 
 export function deactivate() {}

@@ -8,7 +8,7 @@
         "摸鱼",
         "小说"
     ],
-    "version": "0.0.5",
+    "version": "1.0.0",
     "publisher": "wangluo",
     "engines": {
         "vscode": "^1.67.0"
@@ -83,5 +83,9 @@
     "repository": {
         "type": "git",
         "url": "https://github.com/TianCai250/Book-Reader-VSCode"
+    },
+    "dependencies": {
+        "chardet": "^2.0.0",
+        "iconv-lite": "^0.6.3"
     }
 }

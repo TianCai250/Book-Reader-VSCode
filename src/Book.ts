@@ -1,7 +1,7 @@
 import vscode from 'vscode';
 import fs from 'fs';
-// import iconv from 'iconv-lite';
-// import chardet from 'chardet';
+import iconv from 'iconv-lite';
+import chardet from 'chardet';
 
 // 操作类型
 enum IOperateType {
@@ -18,6 +18,7 @@ class Book {
     private end: number;
     private filePath: string;
     private keyWords: string;
+    private content: string;
 
     constructor() {
         this.curr_page_number = 1;
@@ -27,6 +28,8 @@ class Book {
         this.end = this.page_size;
         this.filePath = '';
         this.keyWords = '';
+        this.content = '';
+        this.getContent();
     }
     getSize(text: string) {
         let size = text.length;
@@ -40,8 +43,7 @@ class Book {
         }
         if (this.keyWords !== '') {
             // 跳转关键词位置
-            let text = this.readFile();
-            const index = text.indexOf(this.keyWords);
+            const index = this.content.indexOf(this.keyWords);
             if (index > -1) {
                 page = Math.floor(index / this.page_size) + 1;
             } else {
@@ -71,46 +73,50 @@ class Book {
         this.start = this.curr_page_number * this.page_size;
         this.end = this.curr_page_number * this.page_size - this.page_size;
     }
-    readFile() {
+    // 获取书本内容
+    getContent() {
+        this.filePath = vscode.workspace.getConfiguration().get('bookReader.filePath') ?? '';
         if (this.filePath === '' || typeof this.filePath === 'undefined') {
             vscode.window.showWarningMessage('请填写书籍文件路径');
         }
-        let data = fs.readFileSync(this.filePath, 'utf-8');
-        // 过于卡顿
-        // const detectedEncoding = chardet.detectFileSync(this.filePath);
-        // let utf8data = iconv.decode(data, detectedEncoding?.toString() || '');
-        var line_break = ' ';
-        return data
-            .toString()
-            .replace(/\n/g, line_break)
-            .replace(/\r/g, ' ')
-            .replace(/　　/g, ' ')
-            .replace(/ /g, ' ');
+        try {
+            let data = fs.readFileSync(this.filePath);
+            if (data) {
+                const detectedEncoding = chardet.detectFileSync(this.filePath);
+                let utf8data = iconv.decode(data, detectedEncoding?.toString() || 'UTF-8');
+                var line_break = ' ';
+                this.content = utf8data
+                    .toString()
+                    .replace(/\n/g, line_break)
+                    .replace(/\r/g, ' ')
+                    .replace(/　　/g, ' ')
+                    .replace(/ /g, ' ');
+            }
+        } catch (err) {
+            vscode.window.showWarningMessage('Book-Reader：未搜索到资源，请检查路径是否正确');
+        }
     }
     init() {
-        this.filePath = vscode.workspace.getConfiguration().get('bookReader.filePath') ?? '';
         this.page_size = vscode.workspace.getConfiguration().get('bookReader.pageSize') ?? 50;
         this.keyWords = vscode.workspace.getConfiguration().get('bookReader.keyWords') ?? '';
     }
     getPrePage() {
         this.init();
-        let text = this.readFile();
-        this.getSize(text);
+        this.getSize(this.content);
         this.getPage(IOperateType.previous);
         this.getStartEnd();
         var page_info = this.curr_page_number.toString() + '/' + this.page.toString();
         this.updatePage();
-        return text.substring(this.start, this.end) + '    ' + page_info;
+        return this.content.substring(this.start, this.end) + '    ' + page_info;
     }
     getNextPage() {
         this.init();
-        let text = this.readFile();
-        this.getSize(text);
+        this.getSize(this.content);
         this.getPage(IOperateType.next);
         this.getStartEnd();
         var page_info = this.curr_page_number.toString() + '/' + this.page.toString();
         this.updatePage();
-        return text.substring(this.start, this.end) + '    ' + page_info;
+        return this.content.substring(this.start, this.end) + '    ' + page_info;
     }
 }
 

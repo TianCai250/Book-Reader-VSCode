@@ -35,10 +35,13 @@ __export(src_exports, {
 });
 module.exports = __toCommonJS(src_exports);
 var import_vscode2 = __toESM(require("vscode"));
+var import_vscode3 = require("vscode");
 
 // src/Book.ts
 var import_vscode = __toESM(require("vscode"));
 var import_fs = __toESM(require("fs"));
+var import_iconv_lite = __toESM(require("iconv-lite"));
+var import_chardet = __toESM(require("chardet"));
 var Book = class {
   constructor() {
     this.curr_page_number = 1;
@@ -48,6 +51,8 @@ var Book = class {
     this.end = this.page_size;
     this.filePath = "";
     this.keyWords = "";
+    this.content = "";
+    this.getContent();
   }
   getSize(text) {
     let size = text.length;
@@ -60,8 +65,7 @@ var Book = class {
       return;
     }
     if (this.keyWords !== "") {
-      let text = this.readFile();
-      const index = text.indexOf(this.keyWords);
+      const index = this.content.indexOf(this.keyWords);
       if (index > -1) {
         page = Math.floor(index / this.page_size) + 1;
       } else {
@@ -91,39 +95,47 @@ var Book = class {
     this.start = this.curr_page_number * this.page_size;
     this.end = this.curr_page_number * this.page_size - this.page_size;
   }
-  readFile() {
+  // 获取书本内容
+  getContent() {
+    var _a;
+    this.filePath = (_a = import_vscode.default.workspace.getConfiguration().get("bookReader.filePath")) != null ? _a : "";
     if (this.filePath === "" || typeof this.filePath === "undefined") {
       import_vscode.default.window.showWarningMessage("\u8BF7\u586B\u5199\u4E66\u7C4D\u6587\u4EF6\u8DEF\u5F84");
     }
-    let data = import_fs.default.readFileSync(this.filePath, "utf-8");
-    var line_break = " ";
-    return data.toString().replace(/\n/g, line_break).replace(/\r/g, " ").replace(/　　/g, " ").replace(/ /g, " ");
+    try {
+      let data = import_fs.default.readFileSync(this.filePath);
+      if (data) {
+        const detectedEncoding = import_chardet.default.detectFileSync(this.filePath);
+        let utf8data = import_iconv_lite.default.decode(data, (detectedEncoding == null ? void 0 : detectedEncoding.toString()) || "UTF-8");
+        var line_break = " ";
+        this.content = utf8data.toString().replace(/\n/g, line_break).replace(/\r/g, " ").replace(/　　/g, " ").replace(/ /g, " ");
+      }
+    } catch (err) {
+      import_vscode.default.window.showWarningMessage("Book-Reader\uFF1A\u672A\u641C\u7D22\u5230\u8D44\u6E90\uFF0C\u8BF7\u68C0\u67E5\u8DEF\u5F84\u662F\u5426\u6B63\u786E");
+    }
   }
   init() {
-    var _a, _b, _c;
-    this.filePath = (_a = import_vscode.default.workspace.getConfiguration().get("bookReader.filePath")) != null ? _a : "";
-    this.page_size = (_b = import_vscode.default.workspace.getConfiguration().get("bookReader.pageSize")) != null ? _b : 50;
-    this.keyWords = (_c = import_vscode.default.workspace.getConfiguration().get("bookReader.keyWords")) != null ? _c : "";
+    var _a, _b;
+    this.page_size = (_a = import_vscode.default.workspace.getConfiguration().get("bookReader.pageSize")) != null ? _a : 50;
+    this.keyWords = (_b = import_vscode.default.workspace.getConfiguration().get("bookReader.keyWords")) != null ? _b : "";
   }
   getPrePage() {
     this.init();
-    let text = this.readFile();
-    this.getSize(text);
+    this.getSize(this.content);
     this.getPage(0 /* previous */);
     this.getStartEnd();
     var page_info = this.curr_page_number.toString() + "/" + this.page.toString();
     this.updatePage();
-    return text.substring(this.start, this.end) + "    " + page_info;
+    return this.content.substring(this.start, this.end) + "    " + page_info;
   }
   getNextPage() {
     this.init();
-    let text = this.readFile();
-    this.getSize(text);
+    this.getSize(this.content);
     this.getPage(1 /* next */);
     this.getStartEnd();
     var page_info = this.curr_page_number.toString() + "/" + this.page.toString();
     this.updatePage();
-    return text.substring(this.start, this.end) + "    " + page_info;
+    return this.content.substring(this.start, this.end) + "    " + page_info;
   }
 };
 var Book_default = Book;
@@ -142,15 +154,28 @@ function activate(context) {
     var index = Math.floor(Math.random() * lauage_arr_list.length);
     import_vscode2.default.window.setStatusBarMessage(lauage_arr_list[index]);
   });
+  const book = new Book_default();
   const nextPage = import_vscode2.default.commands.registerCommand("extension.nextPage", () => {
-    import_vscode2.default.window.setStatusBarMessage(new Book_default().getNextPage());
+    import_vscode2.default.window.setStatusBarMessage(book.getNextPage());
   });
   const prePage = import_vscode2.default.commands.registerCommand("extension.prePage", () => {
-    import_vscode2.default.window.setStatusBarMessage(new Book_default().getPrePage());
+    import_vscode2.default.window.setStatusBarMessage(book.getPrePage());
   });
   context.subscriptions.push(bossCode);
   context.subscriptions.push(nextPage);
   context.subscriptions.push(prePage);
+  let timer = null;
+  import_vscode3.workspace.onDidChangeConfiguration((e) => {
+    if (e.affectsConfiguration("bookReader.filePath")) {
+      if (timer) {
+        clearTimeout(timer);
+      }
+      timer = setTimeout(() => {
+        book.getContent();
+        timer = null;
+      }, 1e3);
+    }
+  });
 }
 function deactivate() {
 }
