@@ -95,7 +95,7 @@ var Book = class {
     if (this.filePath === "" || typeof this.filePath === "undefined") {
       import_vscode.default.window.showWarningMessage("\u8BF7\u586B\u5199\u4E66\u7C4D\u6587\u4EF6\u8DEF\u5F84");
     }
-    var data = import_fs.default.readFileSync(this.filePath, "utf-8");
+    let data = import_fs.default.readFileSync(this.filePath, "utf-8");
     var line_break = " ";
     return data.toString().replace(/\n/g, line_break).replace(/\r/g, " ").replace(/　　/g, " ").replace(/ /g, " ");
   }

@@ -1,5 +1,7 @@
 import vscode from 'vscode';
 import fs from 'fs';
+// import iconv from 'iconv-lite';
+// import chardet from 'chardet';
 
 // 操作类型
 enum IOperateType {
@@ -73,9 +75,17 @@ class Book {
         if (this.filePath === '' || typeof this.filePath === 'undefined') {
             vscode.window.showWarningMessage('请填写书籍文件路径');
         }
-        var data = fs.readFileSync(this.filePath, 'utf-8');
+        let data = fs.readFileSync(this.filePath, 'utf-8');
+        // 过于卡顿
+        // const detectedEncoding = chardet.detectFileSync(this.filePath);
+        // let utf8data = iconv.decode(data, detectedEncoding?.toString() || '');
         var line_break = ' ';
-        return data.toString().replace(/\n/g, line_break).replace(/\r/g, ' ').replace(/　　/g, ' ').replace(/ /g, ' ');
+        return data
+            .toString()
+            .replace(/\n/g, line_break)
+            .replace(/\r/g, ' ')
+            .replace(/　　/g, ' ')
+            .replace(/ /g, ' ');
     }
     init() {
         this.filePath = vscode.workspace.getConfiguration().get('bookReader.filePath') ?? '';

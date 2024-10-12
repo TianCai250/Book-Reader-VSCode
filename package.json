@@ -8,7 +8,7 @@
         "摸鱼",
         "小说"
     ],
-    "version": "0.0.4",
+    "version": "0.0.5",
     "publisher": "wangluo",
     "engines": {
         "vscode": "^1.67.0"
@@ -18,7 +18,7 @@
     ],
     "icon": "images/logo.jpg",
     "activationEvents": [
-        "*"
+        "onStartupFinished"
     ],
     "main": "./dist/index.js",
     "contributes": {
@@ -69,8 +69,9 @@
         ]
     },
     "scripts": {
+        "watch": "tsup --watch",
         "build": "tsup",
-        "pack": "vsce package --no-dependencies"
+        "pack": "vsce package"
     },
     "devDependencies": {
         "@types/node": "14.x",
