@@ -77,9 +77,10 @@ class Book {
     getContent() {
         this.filePath = vscode.workspace.getConfiguration().get('bookReader.filePath') ?? '';
         if (this.filePath === '' || typeof this.filePath === 'undefined') {
-            vscode.window.showWarningMessage('请填写书籍文件路径');
+            vscode.window.showWarningMessage('Book-Reader：请填写书籍文件路径');
         }
         try {
+            vscode.window.showInformationMessage('Book-Reader：正在解析文件，请稍等...');
             let data = fs.readFileSync(this.filePath);
             if (data) {
                 const detectedEncoding = chardet.detectFileSync(this.filePath);
@@ -91,9 +92,10 @@ class Book {
                     .replace(/\r/g, ' ')
                     .replace(/　　/g, ' ')
                     .replace(/ /g, ' ');
+                vscode.window.showInformationMessage('Book-Reader：解析完成');
             }
         } catch (err) {
-            vscode.window.showWarningMessage('Book-Reader：未搜索到资源，请检查路径是否正确');
+            vscode.window.showErrorMessage('Book-Reader：未搜索到资源，请检查路径是否正确');
         }
     }
     init() {

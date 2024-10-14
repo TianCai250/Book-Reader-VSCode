@@ -100,18 +100,20 @@ var Book = class {
     var _a;
     this.filePath = (_a = import_vscode.default.workspace.getConfiguration().get("bookReader.filePath")) != null ? _a : "";
     if (this.filePath === "" || typeof this.filePath === "undefined") {
-      import_vscode.default.window.showWarningMessage("\u8BF7\u586B\u5199\u4E66\u7C4D\u6587\u4EF6\u8DEF\u5F84");
+      import_vscode.default.window.showWarningMessage("Book-Reader\uFF1A\u8BF7\u586B\u5199\u4E66\u7C4D\u6587\u4EF6\u8DEF\u5F84");
     }
     try {
+      import_vscode.default.window.showInformationMessage("Book-Reader\uFF1A\u6B63\u5728\u89E3\u6790\u6587\u4EF6\uFF0C\u8BF7\u7A0D\u7B49...");
       let data = import_fs.default.readFileSync(this.filePath);
       if (data) {
         const detectedEncoding = import_chardet.default.detectFileSync(this.filePath);
         let utf8data = import_iconv_lite.default.decode(data, (detectedEncoding == null ? void 0 : detectedEncoding.toString()) || "UTF-8");
         var line_break = " ";
         this.content = utf8data.toString().replace(/\n/g, line_break).replace(/\r/g, " ").replace(/　　/g, " ").replace(/ /g, " ");
+        import_vscode.default.window.showInformationMessage("Book-Reader\uFF1A\u89E3\u6790\u5B8C\u6210");
       }
     } catch (err) {
-      import_vscode.default.window.showWarningMessage("Book-Reader\uFF1A\u672A\u641C\u7D22\u5230\u8D44\u6E90\uFF0C\u8BF7\u68C0\u67E5\u8DEF\u5F84\u662F\u5426\u6B63\u786E");
+      import_vscode.default.window.showErrorMessage("Book-Reader\uFF1A\u672A\u641C\u7D22\u5230\u8D44\u6E90\uFF0C\u8BF7\u68C0\u67E5\u8DEF\u5F84\u662F\u5426\u6B63\u786E");
     }
   }
   init() {

@@ -8,7 +8,7 @@
         "摸鱼",
         "小说"
     ],
-    "version": "1.0.0",
+    "version": "1.0.1",
     "publisher": "wangluo",
     "engines": {
         "vscode": "^1.67.0"
