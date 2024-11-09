@@ -42,6 +42,29 @@ var import_vscode = __toESM(require("vscode"));
 var import_fs = __toESM(require("fs"));
 var import_iconv_lite = __toESM(require("iconv-lite"));
 var import_chardet = __toESM(require("chardet"));
+
+// src/TimeQueue.ts
+var TimeQueue = class {
+  constructor() {
+    this.queue = [];
+  }
+  push(time) {
+    this.queue.push(time);
+    if (this.queue.length > 10) {
+      this.queue = this.queue.slice(this.queue.length - 10, this.queue.length);
+    }
+  }
+  getSpeed() {
+    if (this.queue.length <= 1) {
+      return 0;
+    }
+    let interval = (this.queue[this.queue.length - 1] - this.queue[0]) / (this.queue.length - 1);
+    return Math.round(60 * 60 * 1e3 / interval);
+  }
+};
+var TimeQueue_default = new TimeQueue();
+
+// src/Book.ts
 var Book = class {
   constructor() {
     this.curr_page_number = 1;
@@ -126,7 +149,14 @@ var Book = class {
     this.getSize(this.content);
     this.getPage(0 /* previous */);
     this.getStartEnd();
-    var page_info = this.curr_page_number.toString() + "/" + this.page.toString();
+    let page_info = this.curr_page_number.toString() + "/" + this.page.toString();
+    if (!!import_vscode.default.workspace.getConfiguration().get("bookReader.showPercent")) {
+      page_info += `  ${(this.curr_page_number / this.page * 100).toFixed(2)}%`;
+    }
+    TimeQueue_default.push((/* @__PURE__ */ new Date()).getTime());
+    if (!!import_vscode.default.workspace.getConfiguration().get("bookReader.showSpeed")) {
+      page_info += `  ${TimeQueue_default.getSpeed()}\u884C/\u65F6`;
+    }
     this.updatePage();
     return this.content.substring(this.start, this.end) + "    " + page_info;
   }
@@ -136,6 +166,13 @@ var Book = class {
     this.getPage(1 /* next */);
     this.getStartEnd();
     var page_info = this.curr_page_number.toString() + "/" + this.page.toString();
+    if (!!import_vscode.default.workspace.getConfiguration().get("bookReader.showPercent")) {
+      page_info += `  ${(this.curr_page_number / this.page * 100).toFixed(2)}%`;
+    }
+    TimeQueue_default.push((/* @__PURE__ */ new Date()).getTime());
+    if (!!import_vscode.default.workspace.getConfiguration().get("bookReader.showSpeed")) {
+      page_info += `  ${TimeQueue_default.getSpeed()}\u884C/\u65F6`;
+    }
     this.updatePage();
     return this.content.substring(this.start, this.end) + "    " + page_info;
   }

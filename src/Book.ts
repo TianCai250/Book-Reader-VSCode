@@ -2,6 +2,7 @@ import vscode from 'vscode';
 import fs from 'fs';
 import iconv from 'iconv-lite';
 import chardet from 'chardet';
+import TimeQueue from './TimeQueue';
 
 // 操作类型
 enum IOperateType {
@@ -107,7 +108,16 @@ class Book {
         this.getSize(this.content);
         this.getPage(IOperateType.previous);
         this.getStartEnd();
-        var page_info = this.curr_page_number.toString() + '/' + this.page.toString();
+        let page_info = this.curr_page_number.toString() + '/' + this.page.toString();
+        // 阅读进度
+        if (!!vscode.workspace.getConfiguration().get('bookReader.showPercent')) {
+            page_info += `  ${((this.curr_page_number / this.page) * 100).toFixed(2)}%`;
+        }
+        // 记录时间，测算阅读速度
+        TimeQueue.push(new Date().getTime());
+        if (!!vscode.workspace.getConfiguration().get('bookReader.showSpeed')) {
+            page_info += `  ${TimeQueue.getSpeed()}行/时`;
+        }
         this.updatePage();
         return this.content.substring(this.start, this.end) + '    ' + page_info;
     }
@@ -117,6 +127,15 @@ class Book {
         this.getPage(IOperateType.next);
         this.getStartEnd();
         var page_info = this.curr_page_number.toString() + '/' + this.page.toString();
+        // 阅读进度
+        if (!!vscode.workspace.getConfiguration().get('bookReader.showPercent')) {
+            page_info += `  ${((this.curr_page_number / this.page) * 100).toFixed(2)}%`;
+        }
+        // 记录时间，测算阅读速度
+        TimeQueue.push(new Date().getTime());
+        if (!!vscode.workspace.getConfiguration().get('bookReader.showSpeed')) {
+            page_info += `  ${TimeQueue.getSpeed()}行/时`;
+        }
         this.updatePage();
         return this.content.substring(this.start, this.end) + '    ' + page_info;
     }

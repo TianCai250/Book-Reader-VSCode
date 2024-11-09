@@ -8,7 +8,7 @@
         "摸鱼",
         "小说"
     ],
-    "version": "1.0.1",
+    "version": "1.1.0",
     "publisher": "wangluo",
     "engines": {
         "vscode": "^1.67.0"
@@ -45,6 +45,16 @@
                     "type": "string",
                     "default": "",
                     "description": "跳转关键词位置"
+                },
+                "bookReader.showPercent": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "显示百分比进度"
+                },
+                "bookReader.showSpeed": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "显示阅读速度"
                 }
             }
         },
