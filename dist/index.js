@@ -145,27 +145,20 @@ var Book = class {
     this.keyWords = (_b = import_vscode.default.workspace.getConfiguration().get("bookReader.keyWords")) != null ? _b : "";
   }
   getPrePage() {
-    this.init();
-    this.getSize(this.content);
-    this.getPage(0 /* previous */);
-    this.getStartEnd();
-    let page_info = this.curr_page_number.toString() + "/" + this.page.toString();
-    if (!!import_vscode.default.workspace.getConfiguration().get("bookReader.showPercent")) {
-      page_info += `  ${(this.curr_page_number / this.page * 100).toFixed(2)}%`;
-    }
-    TimeQueue_default.push((/* @__PURE__ */ new Date()).getTime());
-    if (!!import_vscode.default.workspace.getConfiguration().get("bookReader.showSpeed")) {
-      page_info += `  ${TimeQueue_default.getSpeed()}\u884C/\u65F6`;
-    }
-    this.updatePage();
-    return this.content.substring(this.start, this.end) + "    " + page_info;
+    return this.getCurrentText(0 /* previous */);
   }
   getNextPage() {
+    return this.getCurrentText(1 /* next */);
+  }
+  getCurrentText(operateType) {
     this.init();
     this.getSize(this.content);
-    this.getPage(1 /* next */);
+    this.getPage(operateType);
     this.getStartEnd();
-    var page_info = this.curr_page_number.toString() + "/" + this.page.toString();
+    let page_info = "";
+    if (!!import_vscode.default.workspace.getConfiguration().get("bookReader.showLine")) {
+      page_info += this.curr_page_number.toString() + "/" + this.page.toString();
+    }
     if (!!import_vscode.default.workspace.getConfiguration().get("bookReader.showPercent")) {
       page_info += `  ${(this.curr_page_number / this.page * 100).toFixed(2)}%`;
     }

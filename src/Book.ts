@@ -104,29 +104,21 @@ class Book {
         this.keyWords = vscode.workspace.getConfiguration().get('bookReader.keyWords') ?? '';
     }
     getPrePage() {
-        this.init();
-        this.getSize(this.content);
-        this.getPage(IOperateType.previous);
-        this.getStartEnd();
-        let page_info = this.curr_page_number.toString() + '/' + this.page.toString();
-        // 阅读进度
-        if (!!vscode.workspace.getConfiguration().get('bookReader.showPercent')) {
-            page_info += `  ${((this.curr_page_number / this.page) * 100).toFixed(2)}%`;
-        }
-        // 记录时间，测算阅读速度
-        TimeQueue.push(new Date().getTime());
-        if (!!vscode.workspace.getConfiguration().get('bookReader.showSpeed')) {
-            page_info += `  ${TimeQueue.getSpeed()}行/时`;
-        }
-        this.updatePage();
-        return this.content.substring(this.start, this.end) + '    ' + page_info;
+        return this.getCurrentText(IOperateType.previous)
     }
     getNextPage() {
+        return this.getCurrentText(IOperateType.next)
+    }
+    getCurrentText(operateType: IOperateType) {
         this.init();
         this.getSize(this.content);
-        this.getPage(IOperateType.next);
+        this.getPage(operateType);
         this.getStartEnd();
-        var page_info = this.curr_page_number.toString() + '/' + this.page.toString();
+        let page_info = '';
+        // 行数进度
+        if (!!vscode.workspace.getConfiguration().get('bookReader.showLine')) {
+            page_info += (this.curr_page_number.toString() + '/' + this.page.toString());
+        }
         // 阅读进度
         if (!!vscode.workspace.getConfiguration().get('bookReader.showPercent')) {
             page_info += `  ${((this.curr_page_number / this.page) * 100).toFixed(2)}%`;
