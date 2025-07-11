@@ -104,20 +104,25 @@ class Book {
         this.keyWords = vscode.workspace.getConfiguration().get('bookReader.keyWords') ?? '';
     }
     getPrePage() {
-        return this.getCurrentText(IOperateType.previous)
+        return this.getCurrentText(IOperateType.previous);
     }
     getNextPage() {
-        return this.getCurrentText(IOperateType.next)
+        return this.getCurrentText(IOperateType.next);
     }
     getCurrentText(operateType: IOperateType) {
         this.init();
         this.getSize(this.content);
         this.getPage(operateType);
+        if (this.keyWords.length) {
+            vscode.workspace.getConfiguration().update('bookReader.keyWords', '', true);
+            this.keyWords = '';
+        }
+
         this.getStartEnd();
         let page_info = '';
         // 行数进度
         if (!!vscode.workspace.getConfiguration().get('bookReader.showLine')) {
-            page_info += (this.curr_page_number.toString() + '/' + this.page.toString());
+            page_info += this.curr_page_number.toString() + '/' + this.page.toString();
         }
         // 阅读进度
         if (!!vscode.workspace.getConfiguration().get('bookReader.showPercent')) {
