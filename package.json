@@ -1,7 +1,7 @@
 {
     "name": "book-reader",
     "displayName": "Book-Reader",
-    "description": "vscode摸鱼阅读器",
+    "description": "VSCode 状态栏书籍阅读器，支持快捷键翻页、自动编码检测、阅读速度统计和颜色自定义",
     "keywords": [
         "book",
         "reader",

@@ -1,1 +1,7 @@
-src
+src/
+images/
+.vscode/
+.gitignore
+obfuscate.js
+tsup.config.ts
+tsconfig.json
