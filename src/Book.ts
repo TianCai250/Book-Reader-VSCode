@@ -1,141 +1,109 @@
 import vscode from 'vscode';
-import fs from 'fs';
-import iconv from 'iconv-lite';
-import chardet from 'chardet';
-import TimeQueue from './TimeQueue';
+import { OperateType } from './types';
+import { getConfig, updateConfig } from './config';
+import { loadBook } from './bookLoader';
+import { calculateTotalPages, calculatePageRange, findPageByKeyword, clampPage } from './pager';
+import { ReadingProgress } from './readingProgress';
 
-// 操作类型
-enum IOperateType {
-    previous,
-    next,
-    curr,
-}
+/**
+ * Book 协调器：整合配置、文件加载、分页、阅读速度追踪等模块，
+ * 对外提供简洁的 prev()/next()/load() API。
+ *
+ * 注意：构造函数不再主动加载文件，由调用方（index.ts）在合适的时机调用 load()，
+ * 避免插件激活时因缺少路径配置而报错。
+ */
+export class Book {
+    private content = '';
+    private currPageNumber = 1;
+    private totalPages = 0;
+    private progress = new ReadingProgress();
 
-class Book {
-    private curr_page_number: number;
-    private page_size: number;
-    private page: number;
-    private start: number;
-    private end: number;
-    private filePath: string;
-    private keyWords: string;
-    private content: string;
-
-    constructor() {
-        this.curr_page_number = 1;
-        this.page_size = 50;
-        this.page = 0;
-        this.start = 0;
-        this.end = this.page_size;
-        this.filePath = '';
-        this.keyWords = '';
-        this.content = '';
-        this.getContent();
-    }
-    getSize(text: string) {
-        let size = text.length;
-        this.page = Math.ceil(size / this.page_size);
-    }
-    getPage(type: IOperateType) {
-        var curr_page = vscode.workspace.getConfiguration().get<number>('bookReader.currPageNumber');
-        var page = 0;
-        if (curr_page === undefined) {
+    /** 根据当前配置中的 filePath 异步加载书籍内容 */
+    async load(): Promise<void> {
+        const { filePath } = getConfig();
+        if (!filePath) {
+            vscode.window.showWarningMessage('Book-Reader：请填写书籍文件路径');
             return;
         }
-        if (this.keyWords !== '') {
-            // 跳转关键词位置
-            const index = this.content.indexOf(this.keyWords);
-            if (index > -1) {
-                page = Math.floor(index / this.page_size) + 1;
-            } else {
-                page = this.curr_page_number;
-            }
-        } else if (type === IOperateType.previous) {
-            if (curr_page <= 1) {
-                page = 1;
-            } else {
-                page = curr_page - 1;
-            }
-        } else if (type === IOperateType.next) {
-            if (curr_page >= this.page) {
-                page = this.page;
-            } else {
-                page = curr_page + 1;
-            }
-        } else if (type === IOperateType.curr) {
-            page = curr_page;
-        }
-        this.curr_page_number = page;
-    }
-    updatePage() {
-        vscode.workspace.getConfiguration().update('bookReader.currPageNumber', this.curr_page_number, true);
-    }
-    getStartEnd() {
-        this.start = this.curr_page_number * this.page_size;
-        this.end = this.curr_page_number * this.page_size - this.page_size;
-    }
-    // 获取书本内容
-    getContent() {
-        this.filePath = vscode.workspace.getConfiguration().get('bookReader.filePath') ?? '';
-        if (this.filePath === '' || typeof this.filePath === 'undefined') {
-            vscode.window.showWarningMessage('Book-Reader：请填写书籍文件路径');
-        }
+
         try {
-            vscode.window.showInformationMessage('Book-Reader：正在解析文件，请稍等...');
-            let data = fs.readFileSync(this.filePath);
-            if (data) {
-                const detectedEncoding = chardet.detectFileSync(this.filePath);
-                let utf8data = iconv.decode(data, detectedEncoding?.toString() || 'UTF-8');
-                var line_break = ' ';
-                this.content = utf8data
-                    .toString()
-                    .replace(/\n/g, line_break)
-                    .replace(/\r/g, ' ')
-                    .replace(/　　/g, ' ')
-                    .replace(/ /g, ' ');
-                vscode.window.showInformationMessage('Book-Reader：解析完成');
-            }
-        } catch (err) {
-            vscode.window.showErrorMessage('Book-Reader：未搜索到资源，请检查路径是否正确');
+            this.content = await loadBook(filePath);
+            this.totalPages = calculateTotalPages(this.content, getConfig().pageSize);
+            this.currPageNumber = clampPage(getConfig().currPageNumber, this.totalPages);
+            this.progress.reset();
+        } catch {
+            // 错误已在 bookLoader 中提示，这里静默吞掉避免重复弹窗
         }
     }
-    init() {
-        this.page_size = vscode.workspace.getConfiguration().get('bookReader.pageSize') ?? 50;
-        this.keyWords = vscode.workspace.getConfiguration().get('bookReader.keyWords') ?? '';
+
+    /** 上一页 */
+    prev(): string {
+        return this.getText(OperateType.previous);
     }
-    getPrePage() {
-        return this.getCurrentText(IOperateType.previous);
+
+    /** 下一页 */
+    next(): string {
+        return this.getText(OperateType.next);
     }
-    getNextPage() {
-        return this.getCurrentText(IOperateType.next);
-    }
-    getCurrentText(operateType: IOperateType) {
-        this.init();
-        this.getSize(this.content);
-        this.getPage(operateType);
-        if (this.keyWords.length) {
-            vscode.workspace.getConfiguration().update('bookReader.keyWords', '', true);
-            this.keyWords = '';
+
+    /** 核心翻页逻辑：计算页码、持久化进度、记录阅读速度、返回状态栏文本 */
+    private getText(type: OperateType): string {
+        if (!this.content) {
+            return 'Book-Reader：未加载书籍，请检查路径配置';
         }
 
-        this.getStartEnd();
-        let page_info = '';
-        // 行数进度
-        if (!!vscode.workspace.getConfiguration().get('bookReader.showLine')) {
-            page_info += this.curr_page_number.toString() + '/' + this.page.toString();
+        const config = getConfig();
+        this.totalPages = calculateTotalPages(this.content, config.pageSize);
+
+        this.currPageNumber = this.resolvePage(type, config);
+        updateConfig('currPageNumber', this.currPageNumber);
+
+        // 关键词跳转是一次性行为，完成后清空配置避免重复跳转
+        if (config.keyWords) {
+            updateConfig('keyWords', '');
         }
-        // 阅读进度
-        if (!!vscode.workspace.getConfiguration().get('bookReader.showPercent')) {
-            page_info += `  ${((this.curr_page_number / this.page) * 100).toFixed(2)}%`;
+
+        this.progress.record();
+
+        const { start, end } = calculatePageRange(this.currPageNumber, config.pageSize);
+        const text = this.content.substring(start, end);
+        const info = this.formatPageInfo(config);
+        return text + '    ' + info;
+    }
+
+    /** 根据操作类型和当前状态解析目标页码 */
+    private resolvePage(type: OperateType, config: ReturnType<typeof getConfig>): number {
+        if (config.keyWords) {
+            return findPageByKeyword(this.content, config.keyWords, config.pageSize);
         }
-        // 记录时间，测算阅读速度
-        TimeQueue.push(new Date().getTime());
-        if (!!vscode.workspace.getConfiguration().get('bookReader.showSpeed')) {
-            page_info += `  ${TimeQueue.getSpeed()}行/时`;
+
+        if (type === OperateType.previous) {
+            return clampPage(this.currPageNumber - 1, this.totalPages);
         }
-        this.updatePage();
-        return this.content.substring(this.start, this.end) + '    ' + page_info;
+
+        if (type === OperateType.next) {
+            return clampPage(this.currPageNumber + 1, this.totalPages);
+        }
+
+        return clampPage(config.currPageNumber, this.totalPages);
+    }
+
+    /** 按用户配置拼接页码、百分比、阅读速度等信息 */
+    private formatPageInfo(config: ReturnType<typeof getConfig>): string {
+        const parts: string[] = [];
+
+        if (config.showLine) {
+            parts.push(`${this.currPageNumber}/${this.totalPages}`);
+        }
+
+        if (config.showPercent && this.totalPages > 0) {
+            parts.push(`${((this.currPageNumber / this.totalPages) * 100).toFixed(2)}%`);
+        }
+
+        if (config.showSpeed) {
+            parts.push(`${this.progress.getSpeed()}行/时`);
+        }
+
+        return parts.join('  ');
     }
 }
-
-export default Book;

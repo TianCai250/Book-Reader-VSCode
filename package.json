@@ -8,7 +8,7 @@
         "摸鱼",
         "小说"
     ],
-    "version": "1.3.0",
+    "version": "1.4.0",
     "publisher": "wangluo",
     "engines": {
         "vscode": "^1.67.0"
@@ -60,6 +60,16 @@
                     "type": "boolean",
                     "default": true,
                     "description": "显示阅读速度"
+                },
+                "bookReader.textColor": {
+                    "type": "string",
+                    "default": "",
+                    "description": "状态栏文字颜色（hex格式，如#ff6b6b，留空跟随主题）"
+                },
+                "bookReader.useProminentColor": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "使用主题强调色，让阅读器在状态栏更醒目"
                 }
             }
         },
@@ -85,6 +95,7 @@
     },
     "scripts": {
         "watch": "tsup --watch",
+        "dev": "tsup src/index.ts --format cjs --external vscode",
         "build": "tsup src/index.ts --format cjs --external vscode && node obfuscate.js",
         "pack": "vsce package"
     },
