@@ -1,5 +1,4 @@
 src/
-images/
 .vscode/
 .gitignore
 obfuscate.js

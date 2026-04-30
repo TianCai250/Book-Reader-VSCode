@@ -74,15 +74,17 @@ export class Book {
     /** 根据操作类型和当前状态解析目标页码 */
     private resolvePage(type: OperateType, config: ReturnType<typeof getConfig>): number {
         if (config.keyWords) {
-            return findPageByKeyword(this.content, config.keyWords, config.pageSize);
+            const keywordPage = findPageByKeyword(this.content, config.keyWords, config.pageSize);
+            // 关键词找不到时保持当前页，不跳转
+            return keywordPage ?? config.currPageNumber;
         }
 
         if (type === OperateType.previous) {
-            return clampPage(this.currPageNumber - 1, this.totalPages);
+            return clampPage(config.currPageNumber - 1, this.totalPages);
         }
 
         if (type === OperateType.next) {
-            return clampPage(this.currPageNumber + 1, this.totalPages);
+            return clampPage(config.currPageNumber + 1, this.totalPages);
         }
 
         return clampPage(config.currPageNumber, this.totalPages);

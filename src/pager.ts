@@ -14,14 +14,14 @@ export function calculatePageRange(page: number, pageSize: number): { start: num
     return { start, end };
 }
 
-/** 根据关键词在全文中的位置推算所在页码 */
-export function findPageByKeyword(content: string, keyword: string, pageSize: number): number {
+/** 根据关键词在全文中的位置推算所在页码；找不到时返回 null */
+export function findPageByKeyword(content: string, keyword: string, pageSize: number): number | null {
     if (!keyword || !content) {
-        return 1;
+        return null;
     }
     const index = content.indexOf(keyword);
     if (index === -1) {
-        return 1;
+        return null;
     }
     return Math.floor(index / pageSize) + 1;
 }
