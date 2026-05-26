@@ -8,7 +8,7 @@
         "摸鱼",
         "小说"
     ],
-    "version": "1.4.1",
+    "version": "1.4.2",
     "publisher": "wangluo",
     "engines": {
         "vscode": "^1.67.0"
@@ -97,7 +97,7 @@
         "watch": "tsup --watch",
         "dev": "tsup src/index.ts --format cjs --external vscode",
         "build": "tsup src/index.ts --format cjs --external vscode && node obfuscate.js",
-        "pack": "vsce package"
+        "pack": "npm run build && vsce package"
     },
     "devDependencies": {
         "@types/node": "14.x",
