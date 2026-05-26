@@ -54,18 +54,31 @@ export function activate(context: ExtensionContext) {
     });
 
     context.subscriptions.push(bossCode, nextPage, prePage, statusBar);
+    context.subscriptions.push({
+        dispose: () => {
+            void book.flushProgress();
+        },
+    });
 
     // 配置路径改变时防抖重新加载，避免连续修改配置触发多次 IO
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-    workspace.onDidChangeConfiguration((event) => {
+    workspace.onDidChangeConfiguration((event: vscode.ConfigurationChangeEvent) => {
         if (event.affectsConfiguration('bookReader.filePath')) {
             if (debounceTimer) {
                 clearTimeout(debounceTimer);
             }
             debounceTimer = setTimeout(() => {
-                book.load();
+                void book.load();
                 debounceTimer = null;
             }, 1000);
+        }
+
+        if (event.affectsConfiguration('bookReader.pageSize')) {
+            book.onPageSizeChanged();
+        }
+
+        if (event.affectsConfiguration('bookReader.currPageNumber')) {
+            book.onCurrPageNumberChanged();
         }
 
         // 颜色配置变化时实时刷新当前状态栏颜色
@@ -79,7 +92,7 @@ export function activate(context: ExtensionContext) {
     });
 
     // 如果已有路径配置，自动加载书籍
-    book.load();
+    void book.load();
 }
 
 export function deactivate() {}
