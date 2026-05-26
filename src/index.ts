@@ -77,6 +77,10 @@ export function activate(context: ExtensionContext) {
             book.onPageSizeChanged();
         }
 
+        if (event.affectsConfiguration('bookReader.currPageNumber')) {
+            book.onCurrPageNumberChanged();
+        }
+
         // 颜色配置变化时实时刷新当前状态栏颜色
         if (event.affectsConfiguration('bookReader.textColor') ||
             event.affectsConfiguration('bookReader.useProminentColor')) {

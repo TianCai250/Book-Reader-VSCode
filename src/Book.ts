@@ -61,6 +61,21 @@ export class Book {
         this.schedulePersistProgress();
     }
 
+    /** 外部手动修改 currPageNumber，取消落盘定时器，同步配置页码到内存 */
+    onCurrPageNumberChanged(currPageNumber = getConfig().currPageNumber): void {
+        const normalizedPage = this.totalPages > 0
+            ? clampPage(currPageNumber, this.totalPages)
+            : Math.max(1, currPageNumber);
+
+        if (this.persistTimer) {
+            clearTimeout(this.persistTimer);
+            this.persistTimer = null;
+        }
+
+        this.currPageNumber = normalizedPage;
+        this.persistedPageNumber = normalizedPage;
+    }
+
     /** 将内存页码立即落盘（用于停用扩展/切书前） */
     async flushProgress(): Promise<void> {
         if (this.persistTimer) {
@@ -87,6 +102,12 @@ export class Book {
         }
 
         const config = getConfig();
+
+        // 若配置页码被手动修改，优先使用配置页码
+        if (config.currPageNumber !== this.persistedPageNumber) {
+            this.onCurrPageNumberChanged(config.currPageNumber);
+        }
+
         if (config.pageSize !== this.pageSize) {
             this.pageSize = config.pageSize;
             this.totalPages = calculateTotalPages(this.content, this.pageSize);
